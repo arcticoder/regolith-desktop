@@ -1,8 +1,48 @@
-#/usr/bin/sh
+#/usr/bin/bash
 
-wget https://apt.puppetlabs.com/puppet6-release-xenial.deb
-sudo dpkg -i puppet6-release-xenial.deb
-sudo apt-get update
-sudo apt install -y puppet-agent
-sudo /opt/puppetlabs/bin/puppet resource service puppet ensure=running enable=true
-sudo puppet apply ./manifests/init.pp
+programname=$0
+
+function usage {
+    echo "usage: $programname [URL]"
+    echo "  [URL]      Connect to puppet master at URL. Defaults to 127.0.0.1."
+    exit 1
+}
+
+function main {
+    wget -nc -q https://apt.puppetlabs.com/puppet6-release-xenial.deb    
+    sudo dpkg -i puppet6-release-xenial.deb
+    sudo apt-get -qq update
+    echo "Installing puppet-agent"
+    sudo apt -qq install -y puppet-agent
+    echo "Starting puppet service"
+    sudo /opt/puppetlabs/bin/puppet resource service puppet ensure=running enable=true
+    echo "Setting puppet master to $master"
+    sudo /opt/puppetlabs/bin/puppet config set server '$master' --section main    
+}
+
+function apply-manifests {
+    echo "Applying ./manifests/init.pp"
+    sudo /opt/puppetlabs/bin/puppet apply ./manifests/init.pp
+}
+
+function install-server {
+    sudo apt -qq install -y puppetserver
+    sudo systemctl start puppetserver
+    sudo systemctl enable puppetserver
+}
+
+if [ "$#" -eq  "0" ]; then
+        master="127.0.0.1"
+        main
+        install-server
+        apply-manifests
+elif [ "$1" -eq "--help"]; then
+    usage
+elif [ "$#" -eq  "1" ]; then
+    master=$1
+    main
+    apply-manifests
+else
+    echo "Incorrect number of arguments"
+    exit 1
+fi

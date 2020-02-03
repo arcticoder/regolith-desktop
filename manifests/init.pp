@@ -13,5 +13,5 @@ package { 'regolith-desktop':
     ensure => 'present'
 }
 
-
 Apt::Ppa['ppa:regolith-linux/release'] -> Package['regolith-desktop']
+ 
